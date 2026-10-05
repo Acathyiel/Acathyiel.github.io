@@ -113,7 +113,7 @@ const PORTFOLIO = {
     {
       title: "Intelligent Leak Detection System",
       category: "Capstone · Research",
-      year: "Feb 2025 – Apr 2026",
+      year: "Feb 2025 – Apr 2025",
       description: "Coordinated a 3-member capstone team building ILDS, an IoT-based, real-time pipeline anomaly detection system using NVIDIA Jetson Nano, ADC sensors and AWS cloud. Designed the architecture diagrams, block diagrams and flowcharts that explained it to technical and non-technical stakeholders, and co-authored the research paper, submitted for publication (2025).",
       tags: ["IoT", "Edge Computing", "AWS", "Team Lead"],
       image: "",
