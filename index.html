@@ -4,156 +4,173 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Portfolio</title>
-<meta name="description" content="Developer portfolio" />
+<meta name="description" content="Personal portfolio" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Cursor gradient + grain effect -->
-  <div class="cursor-fx" id="cursorFx" aria-hidden="true">
-    <div class="fx-blobs"><i class="o1"></i><i class="o2"></i><i class="o3"></i></div>
-    <div class="fx-grain"></div>
-  </div>
 
-  <!-- ============ NAV ============ -->
+  <!-- ============ NAV (frosted, Apple global-nav style) ============ -->
   <header class="nav" id="nav">
-    <a href="#home" class="logo" data-field="initials">YN</a>
-    <nav>
-      <ul class="nav-links" id="navLinks">
-        <li><a href="#about">About</a></li>
-        <li><a href="#skills">Skills</a></li>
-        <li><a href="#experience">Experience</a></li>
-        <li><a href="#projects">Work</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a class="nav-resume" id="resumeBtn" href="#" target="_blank" rel="noopener">Résumé ↗</a></li>
-      </ul>
-    </nav>
-    <button class="burger" id="burger" aria-label="Toggle menu"><span></span><span></span></button>
+    <div class="nav-inner">
+      <a href="#top" class="nav-logo" data-field="name">Your Name</a>
+      <nav aria-label="Primary">
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#about">About</a></li>
+          <li><a href="#skills">Skills</a></li>
+          <li><a href="#experience">Experience</a></li>
+          <li><a href="#work">Work</a></li>
+          <li><a href="#education">Education</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <a href="#contact" class="pill pill-sm nav-cta">Get in touch</a>
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
   </header>
 
   <main>
-    <!-- ============ HERO ============ -->
-    <section class="hero" id="home">
-      <div class="hero-shapes" aria-hidden="true">
-        <span class="shape shape-1" id="shape1">Y</span>
-        <span class="shape shape-2" id="shape2">N</span>
-      </div>
-
-      <div class="hero-inner">
-        <p class="hero-kicker"><span class="line"></span><span data-field="kicker">Portfolio · [Year]</span></p>
-        <h1 class="wordmark" id="wordmark" data-field="name">YOUR NAME</h1>
-        <p class="hero-role" data-field="role">[Your Role / Title]</p>
-        <p class="hero-tagline" data-field="tagline">[Tagline]</p>
-        <div class="hero-cta">
-          <a href="#projects" class="btn btn-dark">See my work</a>
-          <a href="#contact" class="btn btn-ghost">Let's talk →</a>
-        </div>
-      </div>
-
-      <div class="hero-meta">
-        <span data-field="location">[City, Country]</span>
-        <span class="status"><i></i><span data-field="availability">[Availability]</span></span>
-      </div>
-    </section>
-
-    <!-- ============ TILTED SHOWCASE STRIP ============ -->
-    <section class="showcase" aria-label="Project previews">
-      <div class="showcase-stage">
-        <div class="showcase-track" id="showcaseTrack"></div>
-      </div>
-    </section>
-
-    <!-- ============ ABOUT ============ -->
-    <section class="section dark" id="about">
-      <div class="container about-grid">
-        <div class="about-photo reveal">
-          <div class="photo-frame">
-            <img id="aboutPhoto" alt="" />
-            <div class="photo-placeholder" id="photoPlaceholder">Your<br/>Photo</div>
+    <!-- ============ HERO: pinned scene: copy dissolves, photo rises ============ -->
+    <section class="hero" id="top">
+      <div class="hero-sticky">
+        <div class="hero-glow" id="heroGlow" aria-hidden="true"></div>
+        <div class="hero-copy" id="heroCopy">
+          <p class="eyebrow" data-field="kicker">Portfolio</p>
+          <h1 class="hero-title" id="heroName">Your Name.</h1>
+          <p class="hero-role gradient-text" data-field="role">Role</p>
+          <p class="hero-tagline" data-field="tagline">Tagline</p>
+          <div class="hero-cta">
+            <a href="#work" class="pill">See my work</a>
+            <a href="#contact" class="link-chev">Get in touch</a>
           </div>
         </div>
-        <div class="about-body">
-          <p class="eyebrow reveal">01 — About</p>
-          <h2 class="serif-title reveal" data-field="aboutHeading">[About heading]</h2>
-          <div class="about-text reveal" id="aboutText"></div>
-          <div class="stats" id="stats"></div>
+        <figure class="hero-photo" id="heroPhoto">
+          <img id="heroImg" alt="" />
+          <figcaption id="heroCaption"><i class="dot"></i><span id="heroCaptionText"></span></figcaption>
+        </figure>
+        <div class="scroll-cue" id="scrollCue" aria-hidden="true"><span>Scroll</span><i></i></div>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT: words light up as you scroll ============ -->
+    <section class="section" id="about">
+      <div class="container narrow">
+        <p class="eyebrow reveal">About</p>
+        <h2 class="headline reveal" data-field="aboutHeading">About heading</h2>
+        <div class="lit-text" id="aboutText"></div>
+      </div>
+    </section>
+
+    <!-- ============ STATS: black cinematic pinned scene ============ -->
+    <section class="stats-scene dark" id="stats" data-tone="dark">
+      <div class="stats-sticky">
+        <p class="eyebrow">In numbers</p>
+        <div class="stat-stage" id="statStage"></div>
+        <div class="stat-dots" id="statDots"></div>
+      </div>
+    </section>
+
+    <!-- ============ SKILLS: bento grid ============ -->
+    <section class="section alt" id="skills">
+      <div class="container">
+        <p class="eyebrow reveal">Skills</p>
+        <h2 class="headline reveal">What I bring.</h2>
+        <div class="bento" id="bento"></div>
+      </div>
+    </section>
+
+    <!-- ============ EXPERIENCE: sticky side, revealing points ============ -->
+    <section class="section" id="experience">
+      <div class="container">
+        <p class="eyebrow reveal">Experience</p>
+        <h2 class="headline reveal">Where I've worked.</h2>
+        <div id="expList"></div>
+      </div>
+    </section>
+
+    <!-- ============ LEADERSHIP: positions of responsibility ============ -->
+    <section class="section alt" id="leadership">
+      <div class="container">
+        <p class="eyebrow reveal">Leadership</p>
+        <h2 class="headline reveal">Beyond the classroom.</h2>
+        <div id="leadList"></div>
+      </div>
+    </section>
+
+    <!-- ============ WORK: pinned horizontal gallery ============ -->
+    <section class="work" id="work">
+      <div class="container work-head">
+        <p class="eyebrow reveal">Selected work</p>
+        <h2 class="headline reveal">Work I'm proud of.</h2>
+      </div>
+      <div class="work-pin" id="workPin">
+        <div class="work-sticky">
+          <div class="work-track" id="workTrack"></div>
+          <div class="work-progress" aria-hidden="true"><span id="workBar"></span></div>
         </div>
       </div>
     </section>
 
-    <!-- ============ SKILLS ============ -->
-    <section class="section light" id="skills">
+    <!-- ============ RECOGNITION: achievements ============ -->
+    <section class="section" id="recognition">
       <div class="container">
-        <p class="eyebrow reveal">02 — Skills</p>
-        <h2 class="display-title reveal">What I <em>bring</em></h2>
-        <div class="skills-grid" id="skillsGrid"></div>
-      </div>
-      <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
-    </section>
-
-    <!-- ============ EXPERIENCE ============ -->
-    <section class="section dark" id="experience">
-      <div class="container">
-        <p class="eyebrow reveal">03 — Experience</p>
-        <h2 class="serif-title reveal">Where I've worked</h2>
-        <div class="exp-list" id="expList"></div>
+        <p class="eyebrow reveal">Recognition</p>
+        <h2 class="headline reveal">Moments I'm proud of.</h2>
+        <ol class="awards" id="awards"></ol>
       </div>
     </section>
 
-    <!-- ============ PROJECTS ============ -->
-    <section class="section light" id="projects">
+    <!-- ============ EDUCATION ============ -->
+    <section class="section alt" id="education">
       <div class="container">
-        <p class="eyebrow reveal">04 — Selected Work</p>
-        <h2 class="display-title reveal">Work I'm <em>proud of</em></h2>
-        <div class="filters reveal" id="filters"></div>
-        <div class="projects" id="projectsGrid"></div>
+        <p class="eyebrow reveal">Education</p>
+        <h2 class="headline reveal">Where I've learned.</h2>
+        <div class="edu-grid" id="eduGrid"></div>
+        <div class="cert-list" id="certList"></div>
       </div>
     </section>
 
-    <!-- ============ EDUCATION & CERTS ============ -->
-    <section class="section dark" id="education">
-      <div class="container">
-        <p class="eyebrow reveal">05 — Education</p>
-        <h2 class="serif-title reveal">Where I've learned</h2>
-        <div class="edu-grid">
-          <div id="eduList"></div>
-          <div id="certList"></div>
-        </div>
+    <!-- ============ TESTIMONIALS (hidden when empty) ============ -->
+    <section class="section" id="testimonials">
+      <div class="container narrow">
+        <p class="eyebrow reveal">Kind words</p>
+        <div class="quotes" id="quotes"></div>
       </div>
     </section>
 
-    <!-- ============ TESTIMONIALS ============ -->
-    <section class="section dark alt" id="testimonials">
-      <div class="container">
-        <p class="eyebrow reveal">06 — Kind words</p>
-        <div class="testimonials" id="testimonialsGrid"></div>
-      </div>
-    </section>
-
-    <!-- ============ CONTACT ============ -->
-    <section class="contact" id="contact">
-      <span class="contact-shape" aria-hidden="true">@</span>
-      <div class="container contact-inner">
-        <p class="eyebrow reveal">07 — Contact</p>
-        <h2 class="contact-title reveal">LET'S TELL<br/>A STORY.</h2>
-        <p class="contact-blurb reveal" data-field="contactBlurb">[Contact blurb]</p>
-        <a class="contact-email reveal" id="emailLink" href="#">[email]</a>
+    <!-- ============ CONTACT: black finale ============ -->
+    <section class="contact dark" id="contact" data-tone="dark">
+      <div class="container narrow center">
+        <p class="eyebrow reveal">Contact</p>
+        <h2 class="contact-title" id="contactTitle">Let's tell a story.</h2>
+        <p class="contact-blurb reveal" data-field="contactBlurb">Contact blurb</p>
+        <a class="contact-email reveal" id="emailLink" href="#">email</a>
         <form class="contact-form reveal" id="contactForm">
-          <input type="text" name="name" placeholder="Name" required />
-          <input type="email" name="email" placeholder="Email" required />
-          <textarea name="message" rows="4" placeholder="What's on your mind?" required></textarea>
-          <button type="submit" class="btn btn-dark">Send message →</button>
+          <div class="field-row">
+            <label class="field"><input type="text" name="name" placeholder=" " required /><span>Name</span></label>
+            <label class="field"><input type="email" name="email" placeholder=" " required /><span>Email</span></label>
+          </div>
+          <label class="field"><textarea name="message" rows="4" placeholder=" " required></textarea><span>Message</span></label>
+          <button type="submit" class="pill pill-lg">Send message</button>
         </form>
+        <div class="contact-socials reveal" id="contactSocials"></div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <span>© <span id="year"></span> <span data-field="name">Your Name</span></span>
-    <div class="socials" id="footerSocials"></div>
-    <a href="#home" class="to-top">Back to top ↑</a>
+    <div class="container">
+      <div class="footer-top">
+        <a href="#top" class="footer-name" data-field="name">Your Name</a>
+        <div class="footer-links" id="footerLinks"></div>
+      </div>
+      <div class="footer-bottom">
+        <span>Copyright © <span id="year"></span> <span data-field="name">Your Name</span>. All rights reserved.</span>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </div>
   </footer>
 
   <script src="data.js"></script>

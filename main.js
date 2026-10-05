@@ -1,250 +1,372 @@
 (() => {
-  const D = window.PORTFOLIO || PORTFOLIO;
+  const D = PORTFOLIO;
   const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = (s = "") => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const hideSection = id => { const s = document.getElementById(id); if (s) s.remove(); const l = document.querySelector(`.nav-links a[href="#${id}"]`); if (l) l.parentElement.remove(); };
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const easeInOut = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const removeSection = id => {
+    document.getElementById(id)?.remove();
+    $(`.nav-links a[href="#${id}"]`)?.parentElement.remove();
+  };
 
-  /* ---------- Simple text fields ---------- */
-  document.title = `${D.name} — ${D.role.replace(/[\[\]]/g, "")}`;
-  document.querySelectorAll("[data-field]").forEach(el => {
-    const v = D[el.dataset.field];
-    if (v != null) el.textContent = v;
-  });
-  if (D.resumeUrl) $("#resumeBtn").href = D.resumeUrl;
-  else $("#resumeBtn").parentElement.remove();
-  $("#emailLink").textContent = D.email;
-  $("#emailLink").href = `mailto:${D.email}`;
+  /* =========================================================
+     Render content from data.js
+     ========================================================= */
+  document.title = `${D.name} | ${D.role}`;
+  $$("[data-field]").forEach(el => { const v = D[el.dataset.field]; if (v != null) el.textContent = v; });
+  $("#heroName").textContent = `${D.name}.`;
   $("#year").textContent = new Date().getFullYear();
 
-  /* ---------- Hero: letterforms + split wordmark ---------- */
-  const [i1 = "", i2 = ""] = (D.initials || "").split("");
-  $("#shape1").innerHTML = `<span class="shape-inner">${esc(i1)}</span>`;
-  $("#shape2").innerHTML = `<span class="shape-inner">${esc(i2)}</span>`;
-
-  const wm = $("#wordmark");
-  let n = 0;
-  wm.innerHTML = D.name.toUpperCase().split(" ").map(word =>
-    `<span class="word">${[...word].map(ch =>
-      `<span class="ch"><span style="transition-delay:${0.15 + (n++) * 0.035}s">${esc(ch)}</span></span>`
-    ).join("")}</span>`
-  ).join(" ");
-
-  setTimeout(() => $(".hero").classList.add("ready"), 120);
-
-  // Mouse parallax on the red letterforms
-  const s1 = $("#shape1"), s2 = $("#shape2");
-  if (matchMedia("(pointer:fine)").matches) {
-    window.addEventListener("mousemove", e => {
-      const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
-      s1.style.transform = `translate(${x * -30}px, ${y * -20}px)`;
-      s2.style.transform = `translate(${x * 40}px, ${y * 30}px)`;
-    });
+  // Hero photo
+  if (D.photo) {
+    $("#heroImg").src = D.photo;
+    $("#heroImg").alt = D.name;
+    $("#heroCaptionText").textContent = [D.location, D.availability].filter(Boolean).join(" · ");
+  } else {
+    $("#heroPhoto").remove();
+    $(".hero").classList.add("no-photo");
   }
 
-  /* ---------- Mockup (faux page) generator ---------- */
-  const gradients = [
-    "linear-gradient(135deg,#6b3fa0,#1e1a3a 70%)",
-    "linear-gradient(160deg,#4d86c7,#2c5e3f)",
-    "linear-gradient(135deg,#f4343f,#6b1b3a)",
-    "linear-gradient(150deg,#d7b58a,#5b3a2a)",
-    "linear-gradient(135deg,#3a2f6b,#b98ab8)",
-  ];
-  const mock = (p, i) => p.image
-    ? `<div class="mock"><img src="${esc(p.image)}" alt="${esc(p.title)} preview" loading="lazy" /></div>`
-    : `<div class="mock"><div class="mock-fake">
-         <div class="mf-title"><small>${esc(p.category || "Project")}</small>${esc(p.title)}</div>
-         <div class="mf-img" style="background:${gradients[i % gradients.length]}"></div>
-         <div class="mf-lines"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-       </div></div>`;
+  // About: split into words for scroll lighting
+  $("#aboutText").innerHTML = (D.about || []).map(p =>
+    `<p>${p.split(/\s+/).map(w => `<span class="w">${esc(w)}</span>`).join(" ")}</p>`).join("");
 
-  /* ---------- Showcase strip ---------- */
+  // Stats
+  const stats = D.stats || [];
+  if (stats.length) {
+    $("#statStage").innerHTML = stats.map(s =>
+      `<div class="stat"><div class="stat-value" data-value="${esc(s.value)}">${esc(s.value)}</div><div class="stat-label">${esc(s.label)}</div></div>`).join("");
+    $("#statDots").innerHTML = stats.map(() => "<i></i>").join("");
+    $("#stats").style.height = `${stats.length * 80 + 100}vh`;
+  } else removeSection("stats");
+
+  // Skills: bento tiles
+  const icons = [
+    '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/>',
+    '<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8 7V5.5A2.5 2.5 0 0 1 10.5 3h3A2.5 2.5 0 0 1 16 5.5V7M3 13h18"/>',
+    '<path d="M4 20h16M6 16l3-9 3 5 3-7 3 11"/>',
+    '<rect x="6" y="6" width="12" height="12" rx="2.5"/><path d="M9.5 1.5v3M14.5 1.5v3M9.5 19.5v3M14.5 19.5v3M1.5 9.5h3M1.5 14.5h3M19.5 9.5h3M19.5 14.5h3"/>',
+  ];
+  const sizes = ["wide", "narrow", "narrow", "wide"];
+  const skills = D.skills || [];
+  if (skills.length) {
+    $("#bento").innerHTML = skills.map((g, i) => `
+      <article class="tile reveal ${sizes[i % 4]} ${i === skills.length - 1 && skills.length > 2 ? "ink" : ""}">
+        <div>
+          <div class="tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[i % icons.length]}</svg></div>
+        </div>
+        <div>
+          <h3>${esc(g.group)}.<span class="count">${g.items.length} ${g.items.length === 1 ? "skill" : "skills"}</span></h3>
+          <div class="chips" style="margin-top:20px">${g.items.map(s => `<span class="chip">${esc(s)}</span>`).join("")}</div>
+        </div>
+      </article>`).join("");
+  } else removeSection("skills");
+
+  // Experience & leadership share one layout
+  const roleBlocks = list => list.map(e => `
+      <article class="exp">
+        <div class="exp-side reveal">
+          <div class="exp-period">${esc(e.period)}${e.type ? `<span class="badge">${esc(e.type)}</span>` : ""}</div>
+          <h3 class="exp-role">${esc(e.role)}</h3>
+          <div class="exp-company">${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.company)}</a>` : esc(e.company)}</div>
+          ${e.location ? `<div class="exp-loc">${esc(e.location)}</div>` : ""}
+          ${e.note ? `<div class="exp-note">${esc(e.note)}</div>` : ""}
+          <div class="chips exp-tags">${(e.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+        </div>
+        <ol class="exp-points">${(e.points || []).map(p => `<li class="reveal">${esc(p)}</li>`).join("")}</ol>
+      </article>`).join("");
+  const exp = D.experience || [], lead = D.leadership || [];
+  if (exp.length) $("#expList").innerHTML = roleBlocks(exp); else removeSection("experience");
+  if (lead.length) $("#leadList").innerHTML = roleBlocks(lead); else removeSection("leadership");
+
+  // Achievements
+  const awards = D.achievements || [];
+  if (awards.length) {
+    $("#awards").innerHTML = awards.map(a => `
+      <li class="award reveal">
+        <span class="award-year">${esc(a.year || "")}</span>
+        <div><h3>${esc(a.title)}</h3>${a.detail ? `<p>${esc(a.detail)}</p>` : ""}</div>
+      </li>`).join("");
+  } else removeSection("recognition");
+
+  // Work: horizontal cards with soft mesh gradients
+  const palettes = [
+    ["#e3ebff", "#8ab4ff", "#c7b5ff"],
+    ["#ffeee4", "#ffb48c", "#ff94b8"],
+    ["#e1f6ee", "#7fd8b6", "#9ccaff"],
+    ["#f4ecff", "#d39bff", "#ffb3d6"],
+  ];
+  const mesh = ([base, a, b]) =>
+    `background:radial-gradient(60% 70% at 20% 25%, ${a}, transparent 70%),radial-gradient(55% 65% at 85% 75%, ${b}, transparent 70%),${base}`;
   const projects = D.projects || [];
   if (projects.length) {
-    let items = [...projects];
-    while (items.length < 6) items = items.concat(projects);
-    const html = items.map((p, i) => mock(p, i)).join("");
-    $("#showcaseTrack").innerHTML = html + html; // duplicated for seamless loop
-  } else {
-    document.querySelector(".showcase").remove();
-  }
-
-  /* ---------- About ---------- */
-  $("#aboutText").innerHTML = (D.about || []).map(p => `<p>${esc(p)}</p>`).join("");
-  if (D.photo) {
-    $("#aboutPhoto").src = D.photo;
-    $("#aboutPhoto").alt = D.name;
-    $("#photoPlaceholder").remove();
-  } else {
-    $("#aboutPhoto").remove();
-  }
-  $("#stats").innerHTML = (D.stats || []).map(s =>
-    `<div class="stat reveal"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join("");
-
-  /* ---------- Skills + ticker ---------- */
-  if ((D.skills || []).length) {
-    $("#skillsGrid").innerHTML = D.skills.map((g, i) => `
-      <div class="skill-group reveal">
-        <h3><small>0${i + 1}</small>${esc(g.group)}</h3>
-        <ul>${g.items.map(s => `<li>${esc(s)}</li>`).join("")}</ul>
-      </div>`).join("");
-    const all = D.skills.flatMap(g => g.items).map(s => `<span>${esc(s)}</span><span>✦</span>`).join("");
-    $("#ticker").innerHTML = all + all;
-  } else hideSection("skills");
-
-  /* ---------- Experience ---------- */
-  if ((D.experience || []).length) {
-    $("#expList").innerHTML = D.experience.map(e => `
-      <article class="exp reveal">
-        <div class="exp-when">${esc(e.period)}<small>${esc(e.location || "")}</small></div>
-        <div>
-          <h3>${esc(e.role)} ${e.url
-            ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">@ ${esc(e.company)}</a>`
-            : `<a>@ ${esc(e.company)}</a>`}</h3>
-          <ul>${(e.points || []).map(p => `<li>${esc(p)}</li>`).join("")}</ul>
-          <div class="tags">${(e.tags || e.tech || []).map(t => `<span>${esc(t)}</span>`).join("")}</div>
+    $("#workTrack").innerHTML = projects.map((p, i) => `
+      <article class="card">
+        <div class="card-visual">
+          <div class="card-bg" style="${p.image ? "" : mesh(palettes[i % palettes.length])}">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy" />` : ""}</div>
+          <span class="card-cat">${esc(p.category || "")}</span>
+          <span class="card-num">${String(i + 1).padStart(2, "0")} / ${String(projects.length).padStart(2, "0")}</span>
+          <h3 class="card-title">${esc(p.title)}</h3>
         </div>
-      </article>`).join("");
-  } else hideSection("experience");
-
-  /* ---------- Projects + filters ---------- */
-  if (projects.length) {
-    $("#projectsGrid").innerHTML = projects.map((p, i) => `
-      <article class="project reveal" data-cat="${esc(p.category)}">
-        <div class="project-media">
-          <span class="project-num">${String(i + 1).padStart(2, "0")}</span>
-          ${mock(p, i)}
-        </div>
-        <div class="project-body">
-          <div class="project-top"><h3>${esc(p.title)}</h3><span class="project-cat">${esc(p.category)} · ${esc(p.year || "")}</span></div>
+        <div class="card-body">
           <p>${esc(p.description)}</p>
-          <div class="tags">${(p.tags || p.tech || []).map(t => `<span>${esc(t)}</span>`).join("")}</div>
-          ${(p.links || []).length ? `<div class="project-links">${p.links.map(l =>
-            `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div>` : ""}
+          <div class="card-meta">
+            <div class="chips">${(p.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+            <span class="card-year">${esc(p.year || "")}</span>
+          </div>
+          ${(p.links || []).length ? `<div class="card-links">${p.links.map(l =>
+            `<a class="link-chev" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</div>` : ""}
         </div>
       </article>`).join("");
+  } else removeSection("work");
 
-    const cats = ["All", ...new Set(projects.map(p => p.category).filter(Boolean))];
-    const filters = $("#filters");
-    if (cats.length > 2) {
-      filters.innerHTML = cats.map((c, i) => `<button class="${i ? "" : "active"}" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
-      filters.addEventListener("click", e => {
-        const b = e.target.closest("button"); if (!b) return;
-        filters.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
-        document.querySelectorAll(".project").forEach(p =>
-          p.classList.toggle("hide", b.dataset.cat !== "All" && p.dataset.cat !== b.dataset.cat));
-      });
-    } else filters.remove();
-  } else hideSection("projects");
-
-  /* ---------- Education & certifications ---------- */
+  // Education & certifications
   const edu = D.education || [], certs = D.certifications || [];
   if (edu.length || certs.length) {
-    $("#eduList").innerHTML = edu.length ? `<h3 class="reveal">Education</h3>` + edu.map(e => `
-      <div class="edu-item reveal"><h4>${esc(e.degree)}</h4>
-        <div class="meta">${esc(e.school)} · ${esc(e.period)}</div>
-        ${e.detail ? `<p>${esc(e.detail)}</p>` : ""}</div>`).join("") : "";
-    $("#certList").innerHTML = certs.length ? `<h3 class="reveal">Certifications</h3>` + certs.map(c => `
-      <div class="edu-item reveal"><a href="${esc(c.url || "#")}" target="_blank" rel="noopener"><h4>${esc(c.name)}</h4></a>
-        <div class="meta">${esc(c.issuer)} · ${esc(c.year)}</div></div>`).join("") : "";
-    if (!certs.length) { $("#certList").remove(); $(".edu-grid").classList.add("single"); }
-  } else hideSection("education");
+    $("#eduGrid").innerHTML = edu.map((e, i) => `
+      <div class="par" data-speed="${i % 2 ? .06 : 0}">
+        <article class="edu-card reveal">
+          <div class="edu-school">${esc(e.school)}</div>
+          <h3 class="edu-degree">${esc(e.degree)}</h3>
+          ${e.detail ? `<p class="edu-detail">${esc(e.detail)}</p>` : ""}
+          <div class="edu-period">${esc(e.period)}</div>
+        </article>
+      </div>`).join("");
+    $("#certList").innerHTML = certs.map(c => `
+      <a class="cert reveal" href="${esc(c.url || "#")}" target="_blank" rel="noopener"><b>${esc(c.name)}</b><span>${esc(c.issuer)} · ${esc(c.year)}</span></a>`).join("");
+  } else removeSection("education");
 
-  /* ---------- Testimonials ---------- */
+  // Testimonials
   if ((D.testimonials || []).length) {
-    $("#testimonialsGrid").innerHTML = D.testimonials.map(t => `
-      <figure class="quote reveal"><blockquote>${esc(t.quote)}</blockquote>
-        <figcaption><b>${esc(t.name)}</b>${esc(t.title)}</figcaption></figure>`).join("");
-  } else hideSection("testimonials");
+    $("#quotes").innerHTML = D.testimonials.map(t => `
+      <figure class="quote reveal"><blockquote>“${esc(t.quote)}”</blockquote>
+        <figcaption><b>${esc(t.name)}</b> · ${esc(t.title)}</figcaption></figure>`).join("");
+  } else removeSection("testimonials");
 
-  /* ---------- Renumber section eyebrows after hidden sections are removed ---------- */
-  let sec = 0;
-  document.querySelectorAll("main .eyebrow").forEach(el => {
-    const m = el.textContent.match(/^\d+\s—\s(.*)$/);
-    if (m) el.textContent = `${String(++sec).padStart(2, "0")} — ${m[1]}`;
-  });
+  // Contact + footer links
+  $("#emailLink").textContent = D.email;
+  $("#emailLink").href = `mailto:${D.email}`;
+  const socials = D.socials || [];
+  $("#contactSocials").innerHTML = socials.map(s =>
+    `<a class="link-chev" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join("");
+  $("#footerLinks").innerHTML = [
+    ...socials.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`),
+    D.resumeUrl ? `<a href="${esc(D.resumeUrl)}" target="_blank" rel="noopener">Résumé</a>` : "",
+    `<a href="mailto:${esc(D.email)}">Email</a>`,
+  ].join("");
 
-  /* ---------- Socials ---------- */
-  $("#footerSocials").innerHTML = (D.socials || []).map(s =>
-    `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join("");
-
-  /* ---------- Contact form (opens the visitor's mail app) ---------- */
   $("#contactForm").addEventListener("submit", e => {
     e.preventDefault();
     const f = new FormData(e.target);
-    const subject = encodeURIComponent(`Portfolio enquiry from ${f.get("name")}`);
-    const body = encodeURIComponent(`${f.get("message")}\n\n— ${f.get("name")} (${f.get("email")})`);
+    const subject = encodeURIComponent(`Hello from ${f.get("name")}`);
+    const body = encodeURIComponent(`${f.get("message")}\n\nFrom ${f.get("name")} (${f.get("email")})`);
     location.href = `mailto:${D.email}?subject=${subject}&body=${body}`;
   });
 
-  /* ---------- Nav behaviour ---------- */
-  const nav = $("#nav");
-  const onScroll = () => nav.classList.toggle("scrolled", scrollY > 40);
-  addEventListener("scroll", onScroll, { passive: true }); onScroll();
+  // Gradient definition used by the dark bento tile icon
+  document.body.insertAdjacentHTML("afterbegin",
+    `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#2997ff"/><stop offset=".5" stop-color="#9b7bff"/><stop offset="1" stop-color="#ff6b9a"/></linearGradient></defs></svg>`);
 
-  const burger = $("#burger"), links = $("#navLinks");
-  burger.addEventListener("click", () => { burger.classList.toggle("open"); links.classList.toggle("open"); });
-  links.addEventListener("click", e => { if (e.target.closest("a")) { burger.classList.remove("open"); links.classList.remove("open"); } });
-
-  /* ---------- Cursor FX: trailing gradient blobs + grain ---------- */
-  const fx = $("#cursorFx");
-  if (fx && matchMedia("(pointer:fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const orbs = [...fx.querySelectorAll(".fx-blobs i")];
-    const ease = [0.16, 0.09, 0.05];            // each blob trails at its own speed
-    const pos = orbs.map(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
-    const m = { x: innerWidth / 2, y: innerHeight / 2 };
-    let vel = 0, boost = 1, boostTarget = 1, isDark = null, t = 0;
-
-    const setTone = dark => {
-      if (dark === isDark) return;
-      isDark = dark;
-      fx.classList.add("swap");                  // fade out, flip blend mode, fade in
-      setTimeout(() => { fx.classList.toggle("dark", dark); fx.classList.remove("swap"); }, 180);
-    };
-
+  /* =========================================================
+     Sleek cursor (mouse / trackpad only)
+     ========================================================= */
+  if (matchMedia("(hover: hover) and (pointer: fine)").matches && !RM) {
+    const root = document.documentElement;
+    root.classList.add("has-cursor");
+    document.body.insertAdjacentHTML("beforeend", '<div class="cursor-lens"></div>');
+    const lens = $(".cursor-lens");
+    const m = { x: -100, y: -100 }, r = { x: -100, y: -100 };
     addEventListener("mousemove", e => {
       m.x = e.clientX; m.y = e.clientY;
-      fx.classList.add("on");
-      const under = document.elementFromPoint(e.clientX, e.clientY);
-      if (under) setTone(!!under.closest(".dark, .showcase, .footer, .project-media, .btn-dark"));
-      boostTarget = under && under.closest("a, button, input, textarea, .mock") ? 1.45 : 1;
+      if (!root.classList.contains("cursor-on")) { r.x = m.x; r.y = m.y; }   // no swoop-in from the corner
+      root.classList.add("cursor-on");
+      const t = e.target;
+      root.classList.toggle("cursor-text", !!t.closest?.("input, textarea"));
+      root.classList.toggle("cursor-hover", !!t.closest?.("a, button, label"));
     }, { passive: true });
-    document.addEventListener("mouseleave", () => fx.classList.remove("on"));
-    addEventListener("mousedown", () => { boost = 1.9; });
-
-    (function loop() {
-      t += 0.016;
-      const lead = pos[0], dx = m.x - lead.x, dy = m.y - lead.y;
-      vel += (Math.min(Math.hypot(dx, dy) / 120, 1) - vel) * 0.15;
-      boost += (boostTarget - boost) * 0.08;
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-      orbs.forEach((o, i) => {
-        const p = pos[i];
-        // blobs orbit the cursor a little so the shape keeps changing even at rest
-        const ox = Math.cos(t * (0.9 + i * 0.4) + i * 2) * 12 * i;
-        const oy = Math.sin(t * (0.7 + i * 0.5) + i) * 12 * i;
-        p.x += (m.x + ox - p.x) * ease[i];
-        p.y += (m.y + oy - p.y) * ease[i];
-        const stretch = 1 + vel * 0.45;
-        const s = boost * (1 + Math.sin(t * 1.3 + i) * 0.06);
-        o.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${angle}deg) scale(${s * stretch}, ${s / (1 + vel * 0.25)})`;
-      });
-      fx.style.setProperty("--x", `${pos[0].x}px`);
-      fx.style.setProperty("--y", `${pos[0].y}px`);
-      fx.style.setProperty("--r", `${105 * boost + vel * 40}px`);
-      requestAnimationFrame(loop);
+    document.addEventListener("mouseleave", () => root.classList.remove("cursor-on"));
+    addEventListener("mousedown", () => root.classList.add("cursor-down"));
+    addEventListener("mouseup", () => root.classList.remove("cursor-down"));
+    (function follow() {
+      r.x += (m.x - r.x) * .22; r.y += (m.y - r.y) * .22;   // lens glides just behind the pointer
+      lens.style.transform = `translate3d(${r.x}px,${r.y}px,0)`;
+      requestAnimationFrame(follow);
     })();
   }
 
-  /* ---------- Scroll reveal (staggered) ---------- */
+  /* =========================================================
+     Menu
+     ========================================================= */
+  const burger = $("#burger");
+  burger.addEventListener("click", () => {
+    const open = document.body.classList.toggle("menu-open");
+    burger.setAttribute("aria-expanded", open);
+  });
+  $("#navLinks").addEventListener("click", e => {
+    if (e.target.closest("a")) { document.body.classList.remove("menu-open"); burger.setAttribute("aria-expanded", false); }
+  });
+
+  /* =========================================================
+     Reveal on enter (blur-rise, staggered among siblings)
+     ========================================================= */
   const io = new IntersectionObserver(entries => {
     entries.forEach(en => {
       if (!en.isIntersecting) return;
-      const sibs = [...en.target.parentElement.children].filter(c => c.classList.contains("reveal"));
-      en.target.style.transitionDelay = `${Math.min(sibs.indexOf(en.target), 6) * 0.08}s`;
-      en.target.classList.add("in");
-      io.unobserve(en.target);
+      const t = en.target;
+      const sibs = [...t.parentElement.children].filter(c => c.classList.contains("reveal"));
+      t.style.transitionDelay = `${Math.min(sibs.indexOf(t), 5) * 90}ms`;
+      t.classList.add("in");
+      io.unobserve(t);
     });
-  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+  }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+  $$(".reveal").forEach(el => io.observe(el));
+
+  /* =========================================================
+     Stat count-up
+     ========================================================= */
+  const countUp = el => {
+    // Only count values that lead with a number ("500+", "1.9 yrs"): never "Rank 3"
+    const text = el.dataset.value, m = text.match(/^\d+(?:\.\d+)?/);
+    if (!m || RM) { el.textContent = text; return; }
+    const target = parseFloat(m[0]), dec = (m[0].split(".")[1] || "").length, t0 = performance.now();
+    const tick = now => {
+      const k = clamp((now - t0) / 1400), v = target * (1 - Math.pow(2, -10 * k));
+      el.textContent = text.replace(m[0], (k >= 1 ? target : v).toFixed(dec));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  /* =========================================================
+     Scroll engine: every scene reads one progress value
+     ========================================================= */
+  const nav = $("#nav");
+  const hero = $(".hero"), heroCopy = $("#heroCopy"), heroPhoto = $("#heroPhoto"),
+        heroCap = $("#heroCaption"), heroGlow = $("#heroGlow"), cue = $("#scrollCue");
+  const words = $$("#aboutText .w"), aboutEl = $("#aboutText");
+  const statsEl = $("#stats"), statEls = $$(".stat"), dotEls = $$("#statDots i");
+  const workPin = $("#workPin"), track = $("#workTrack"), bar = $("#workBar");
+  const cardBgs = $$(".card-bg");
+  const contactTitle = $("#contactTitle"), contactEl = $("#contact");
+  const darks = $$("[data-tone='dark']");
+  const pars = $$("[data-speed]");
+
+  let vh = innerHeight, vw = innerWidth, workMax = 0, desktopWork = false, litCount = -1, statIdx = -1;
+
+  const pinProgress = el => {
+    const r = el.getBoundingClientRect();
+    return clamp(-r.top / (r.height - vh));
+  };
+
+  const measure = () => {
+    vh = innerHeight; vw = innerWidth;
+    desktopWork = !RM && vw > 900 && track;
+    if (track && workPin) {
+      if (desktopWork) {
+        workMax = Math.max(0, track.scrollWidth - vw);
+        workPin.style.height = `${workMax + vh}px`;
+      } else {
+        workPin.style.height = "";
+        track.style.transform = "";
+      }
+    }
+    update();
+  };
+
+  const cardParallax = () => {
+    cardBgs.forEach(bg => {
+      const r = bg.parentElement.getBoundingClientRect();
+      const off = (r.left + r.width / 2 - vw / 2) / vw;
+      bg.style.transform = `translate3d(${off * -70}px,0,0) scale(1.08)`;
+    });
+  };
+
+  function update() {
+    ticking = false;
+
+    // Hero: copy dissolves, photo rises into place
+    if (hero && !RM) {
+      const p = pinProgress(hero);
+      const c = clamp(p / .42);
+      heroCopy.style.opacity = 1 - c;
+      heroCopy.style.transform = `translate3d(0,${-c * 70}px,0) scale(${1 - c * .08})`;
+      heroCopy.style.filter = c > 0.01 ? `blur(${c * 10}px)` : "";
+      if (heroPhoto) {
+        const ph = easeInOut(clamp((p - .04) / .66));
+        heroPhoto.style.transform = `translate(-50%,-50%) translate3d(0,${(1 - ph) * 62}vh,0) scale(${.78 + .22 * ph})`;
+        heroCap.style.opacity = clamp((p - .72) / .18);
+        heroGlow.style.opacity = ph * .9;
+      }
+      cue.style.opacity = clamp(1 - p * 8);
+    }
+
+    // About: light words progressively
+    if (aboutEl && words.length) {
+      const r = aboutEl.getBoundingClientRect();
+      const p = clamp((vh * .85 - r.top) / (r.height + vh * .25));
+      const n = Math.round(p * words.length);
+      if (n !== litCount) {
+        words.forEach((w, i) => w.classList.toggle("on", i < n));
+        litCount = n;
+      }
+    }
+
+    // Stats: one at a time
+    if (statsEl && statEls.length && !RM) {
+      const p = pinProgress(statsEl);
+      const r = statsEl.getBoundingClientRect();
+      const inView = r.top < vh * .5 && r.bottom > vh * .5;
+      const idx = inView ? Math.min(statEls.length - 1, Math.floor(p * statEls.length * .999)) : -1;
+      if (idx !== statIdx) {
+        statEls.forEach((s, i) => {
+          s.classList.toggle("active", i === idx);
+          s.classList.toggle("past", idx > -1 && i < idx);
+        });
+        dotEls.forEach((d, i) => d.classList.toggle("on", i === idx));
+        if (idx > -1) countUp($(".stat-value", statEls[idx]));
+        statIdx = idx;
+      }
+    }
+
+    // Work: vertical scroll drives horizontal track
+    if (desktopWork) {
+      const p = pinProgress(workPin);
+      track.style.transform = `translate3d(${-p * workMax}px,0,0)`;
+      bar.style.transform = `scaleX(${p})`;
+      cardParallax();
+    }
+
+    // Contact headline scales up into place
+    if (contactTitle && !RM) {
+      const r = contactEl.getBoundingClientRect();
+      const p = easeInOut(clamp((vh - r.top) / (vh * .75)));
+      contactTitle.style.transform = `scale(${.78 + .22 * p})`;
+      contactTitle.style.opacity = .15 + .85 * p;
+    }
+
+    // Gentle parallax
+    if (!RM) pars.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > vh + 200) return;
+      const off = clamp(r.top + r.height / 2 - vh / 2, -vh, vh);
+      el.style.transform = `translate3d(0,${off * -parseFloat(el.dataset.speed)}px,0)`;
+    });
+
+    // Nav tone flips over dark sections
+    const onDark = darks.some(s => { const r = s.getBoundingClientRect(); return r.top <= 26 && r.bottom >= 26; });
+    nav.classList.toggle("on-dark", onDark && !document.body.classList.contains("menu-open"));
+  }
+
+  let ticking = false;
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  addEventListener("scroll", onScroll, { passive: true });
+  addEventListener("resize", measure);
+  track?.addEventListener("scroll", () => requestAnimationFrame(cardParallax), { passive: true });
+  if (document.fonts) document.fonts.ready.then(measure);
+  addEventListener("load", measure);
+  measure();
+  cardParallax();
 })();
